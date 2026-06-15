@@ -9,6 +9,7 @@ import {
   Calendar,
   Edit3,
   Trash2,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 import Dashboard from "../staticPages/dashboard";
