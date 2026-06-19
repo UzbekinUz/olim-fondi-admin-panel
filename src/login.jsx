@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function Login({ setAdmin }) {
+export default function Login({ setAdmin, setRef, ref }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,6 +27,7 @@ export default function Login({ setAdmin }) {
     e.preventDefault();
     if (username === keytoenter && password === passtoadmin) {
       setAdmin({ admin: true });
+      setRef(!ref)
     } else {
       setError("Foydalanuvchi nomi yoki parol noto'g'ri!");
       setShake(true);

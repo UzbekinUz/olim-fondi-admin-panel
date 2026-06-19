@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import { Check } from "lucide-react";
+import { Trash } from "lucide-react";
 import Login from "./login";
-import News from "./pages/news";
 import SelectedApp from "./pages/selectedApp";
 import Header from "./pages/header";
 import SideBar from "./pages/sidebar";
-import { initialApplications, initialNews } from "./data/static.json";
+import { initialNews } from "./data/static.json";
+import axios from "axios";
+import { API_LINK } from "./cfg";
 
 export default function App() {
-  // --- STATES ---
-  const [apps, setApps] = useState(initialApplications);
   const [news, setNews] = useState(initialNews);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null); // Detailed view
   const [newsModalOpen, setNewsModalOpen] = useState(false);
-  const [editingNewsIdx, setEditingNewsIdx] = useState(null); // null means "Create" mode
-
+  const [editingNewsIdx, setEditingNewsIdx] = useState(null);
+  const [refresh, setRefresh] = useState(false); // null means "Create" mode
+  const [appData, setAppData] = useState([]);
   // News Form fields state
   const [newsForm, setNewsForm] = useState({
     title: "",
@@ -25,7 +25,14 @@ export default function App() {
     image: "",
     content: "",
   });
-
+  useEffect(() => {
+    axios.get(`${API_LINK}/apply/getall`).then((res) => {
+      const { ok, data } = res.data;
+      if (ok) {
+        setAppData(data);
+      }
+    });
+  }, [refresh]);
   // Custom Toast notification
   const [toast, setToast] = useState({
     show: false,
@@ -66,38 +73,52 @@ export default function App() {
     }, 3500);
   };
 
-  const handleStatusChange = (appId, newStatus) => {
-    setApps((prevApps) =>
-      prevApps.map((app) => {
-        if (app.id === appId) {
-          return { ...app, status: newStatus };
+  const [admin, setAdmin] = useState(false);
+
+
+
+  useEffect(() => {
+    const fetchAllNews = async () => {
+      try {
+        const response = await axios.get(`${API_LINK}/news/getall`);
+        if (response.data.ok) {
+          setNews(response.data.data); // Serverdan kelgan massivni saqlaymiz
+        } else {
+          console.error(response.data.msg);
         }
-        return app;
-      }),
-    );
+      } catch (error) {
+        console.error("Yangiliklarni yuklashda xatolik:", error);
+      }
+    };
 
-    let message = "Ariza kutilayotgan holatga qaytarildi!";
-    let typeColor = "text-amber-400";
-    if (newStatus === "approved") {
-      message = "Talabaning arizasi muvaffaqiyatli qabul qilindi!";
-      typeColor = "text-emerald-400";
-    } else if (newStatus === "rejected") {
-      message = "Ariza rad etildi.";
-      typeColor = "text-rose-400";
-    }
+    fetchAllNews();
+  }, []);
 
-    triggerToast(message, <Check className="w-5 h-5" />, typeColor);
-
-    // Close detail modal if open
-    if (selectedApp && selectedApp.id === appId) {
-      setSelectedApp(null);
+  // --- 2. Yangilikni o'chirish (delete) ---
+  const handleDeleteNews = async (id) => {
+    if (window.confirm("Haqiqatdan ham ushbu yangilikni o'chirmoqchimisiz?")) {
+      try {
+        const response = await axios.delete(`${API_LINK}/news/delete/${id}`);
+        if (response.data.ok) {
+          // UI dan o'chirilgan elementni olib tashlaymiz
+          setNews((prev) => prev.filter((item) => item._id !== id));
+          triggerToast(
+            "Yangilik muvaffaqiyatli o'chirildi!",
+            <Trash className="w-5 h-5" />,
+            "text-red-400",
+          );
+        } else {
+          alert(response.data.msg);
+        }
+      } catch (error) {
+        console.error("O'chirishda xatolik:", error);
+        alert("Serverda xatolik yuz berdi.");
+      }
     }
   };
 
-  const [admin, setAdmin] = useState(false);
-
-  if (admin === false) {
-    return <Login setAdmin={setAdmin} />;
+  if (admin) {
+    return <Login ref={refresh} setRef={setRefresh} setAdmin={setAdmin} />;
   } else {
     return (
       <div className="h-screen overflow-hidden flex flex-col bg-slate-50 font-sans">
@@ -105,13 +126,15 @@ export default function App() {
         <Header setSidebarOpen={setSidebarOpen} />
 
         <SideBar
-          app={apps}
+        setNewsForm={setNewsForm}
+        newsForm={newsForm}
+          setRefresh={setRefresh}
+          refresh={refresh}
+          apps={appData}
           currentDateStr={currentDateStr}
           sidebarOpen={sidebarOpen}
           setEditingNewsIdx={setEditingNewsIdx}
           news={news}
-          apps={apps}
-          handleStatusChange={handleStatusChange}
           currentDateStr={currentDateStr}
           setSelectedApp={setSelectedApp}
           setAdmin={setAdmin}
@@ -122,6 +145,9 @@ export default function App() {
           setEditingNewsIdx={setEditingNewsIdx}
           setNewsForm={setNewsForm}
           setNewsModalOpen={setNewsModalOpen}
+          setNews={setNews}
+
+          editingNewsIdx={editingNewsIdx}
         />
 
         {/* ==================== DETAILED APPLICATION VIEW MODAL ==================== */}
@@ -129,23 +155,25 @@ export default function App() {
           <SelectedApp
             setSelectedApp={setSelectedApp}
             selectedApp={selectedApp}
-            handleStatusChange={handleStatusChange}
             triggerToast={triggerToast}
+            setRefresh={setRefresh}
+            refresh={refresh}
           />
         )}
 
         {/* ==================== NEWS ADD / EDIT MODAL ==================== */}
-        {newsModalOpen && (
-          <News
+        {/* {newsModalOpen && (
+          <NewsDashboard
             news={news}
             setNewsForm={setNewsForm}
             setNewsModalOpen={setNewsModalOpen}
             editingNewsIdx={editingNewsIdx}
             newsForm={newsForm}
             setNews={setNews}
+            handleDeleteNews={handleDeleteNews}
             triggerToast={triggerToast}
           />
-        )}
+        )} */}
 
         {/* ==================== TOAST NOTIFICATION ==================== */}
         {toast.show && (
