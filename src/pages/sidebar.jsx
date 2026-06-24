@@ -7,11 +7,13 @@ import {
   ChevronRight,
   Bell,
   Calendar,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import Dashboard from "../staticPages/dashboard";
 import Application from "../staticPages/application";
 import NewsManager from "./news";
+import RahbariyatAdmin from "./rahbariyat";
 
 function SideBar({
   news = [],
@@ -106,6 +108,18 @@ function SideBar({
             />
             Yangiliklar CMS
           </button>
+          <button
+            onClick={() => {
+              setCurrentTab("rahbariyat");
+              setSidebarOpen(false);
+            }}
+            className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${currentTab === "news" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "hover:bg-slate-800 hover:text-white text-slate-300"}`}
+          >
+            <Users
+              className={`mr-3 w-5 h-5 ${currentTab === "news" ? "text-white" : "text-slate-400 group-hover:text-indigo-400"}`}
+            />
+            Rahbariyat
+          </button>
         </nav>
 
         {/* Bottom logout info */}
@@ -185,6 +199,9 @@ function SideBar({
           {/* 3. NEWS CMS TAB */}
           {currentTab === "news" && (
             <NewsManager/>
+          )}
+          {currentTab === "rahbariyat" && (
+            <RahbariyatAdmin/>
           )}
         </div>
       </main>
